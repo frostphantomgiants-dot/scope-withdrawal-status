@@ -28,6 +28,7 @@ export function ActionButton({
       className={cn(
         "w-full rounded-[11px] text-[15px] font-bold transition-colors duration-150",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+        "disabled:cursor-not-allowed disabled:opacity-60",
         variant === "primary"
           ? "focus-visible:ring-action-green"
           : "focus-visible:ring-cancel-red",
