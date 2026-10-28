@@ -59,6 +59,30 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Scope withdrawal UI tokens (sampled from reference) */
+  --color-page-bg: #f5f7f9;
+  --color-card-border: #e0e5eb;
+  --color-scope-red: #ff4057;
+  --color-banner-bg: #fff7dc;
+  --color-banner-border: #ffdb70;
+  --color-banner-text: #b85a00;
+  --color-escrow-green: #159b50;
+  --color-subtitle-gray: #6b7280;
+  --color-panel-bg: #f8f9fa;
+  --color-label-muted: #68778a;
+  --color-value-dark: #111827;
+  --color-status-amber: #f0b400;
+  --color-status-grey: #667085;
+  --color-select-border: #d0d7e0;
+  --color-action-green: #12a650;
+  --color-action-green-hover: #0f9145;
+  --color-action-green-active: #0d7d3a;
+  --color-cancel-red: #ff3038;
+  --color-cancel-red-hover-bg: #fff1f2;
+  --color-helper-gray: #667085;
+  --shadow-card: 0 14px 35px rgb(30 45 60 / 0.08);
+  --font-sans: Arial, Helvetica, sans-serif;
 }
 
 :root {
@@ -140,5 +164,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14px;
   }
 }
