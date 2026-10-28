@@ -342,7 +342,7 @@ export function AuthModal({
                   autoComplete="email"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
-                  aria-invalid={fieldErrors.email || undefined}
+                  aria-invalid={fieldErrors.email ? true : undefined}
                   className={inputClass(Boolean(fieldErrors.email))}
                 />
                 {fieldErrors.email ? (
@@ -366,7 +366,7 @@ export function AuthModal({
                   }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
-                  aria-invalid={fieldErrors.password || undefined}
+                  aria-invalid={fieldErrors.password ? true : undefined}
                   className={inputClass(Boolean(fieldErrors.password))}
                 />
                 {fieldErrors.password ? (

@@ -1,5 +1,5 @@
 interface SessionBarProps {
-  email?: string;
+  email?: string | undefined;
   onSignOut: () => void;
 }
 
