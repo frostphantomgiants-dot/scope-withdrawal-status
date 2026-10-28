@@ -69,7 +69,11 @@ export function DetailsPanel({
         <span
           className={cn(
             "text-sm font-medium",
-            status === "pending" ? "text-status-amber" : "text-status-grey",
+            status === "pending"
+              ? "text-status-amber"
+              : status === "withdrawn"
+                ? "text-escrow-green"
+                : "text-status-grey",
           )}
         >
           {STATUS_LABEL[status]}

@@ -34,9 +34,10 @@ export const PAYMENT_METHODS = [
 
 export type PaymentMethodValue = (typeof PAYMENT_METHODS)[number]["value"];
 
-export type DemoTransactionStatus = "pending" | "cancelled";
+export type DemoTransactionStatus = "pending" | "withdrawn" | "cancelled";
 
 export const STATUS_LABEL: Record<DemoTransactionStatus, string> = {
   pending: "Pending",
+  withdrawn: "Withdrawn",
   cancelled: "Cancelled",
 };
