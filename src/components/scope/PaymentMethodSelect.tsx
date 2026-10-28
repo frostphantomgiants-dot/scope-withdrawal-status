@@ -27,7 +27,7 @@ export function PaymentMethodSelect({
           onChange(next === "" ? "" : (next as PaymentMethodValue));
         }}
         className={cn(
-          "h-[45px] w-full cursor-pointer appearance-none rounded-[11px] border bg-white pl-[10px] pr-8 text-sm text-value-dark",
+          "h-[45px] w-full cursor-pointer appearance-none rounded-[11px] border border-select-border bg-white pl-[10px] pr-8 text-sm text-value-dark",
           "focus:border-escrow-green focus:outline-none focus-visible:ring-2 focus-visible:ring-escrow-green/40",
           invalid && "border-cancel-red",
         )}
