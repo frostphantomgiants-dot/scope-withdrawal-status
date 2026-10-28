@@ -5,8 +5,8 @@ import { PAYMENT_METHODS, type PaymentMethodValue } from "./types";
 interface PaymentMethodSelectProps {
   value: PaymentMethodValue | "";
   onChange: (value: PaymentMethodValue | "") => void;
-  invalid?: boolean;
-  describedBy?: string;
+  invalid?: boolean | undefined;
+  describedBy?: string | undefined;
 }
 
 export function PaymentMethodSelect({
