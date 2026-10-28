@@ -6,7 +6,7 @@ interface DemoModalProps {
   title: string;
   description: ReactNode;
   confirmLabel: string;
-  cancelLabel: string;
+  cancelLabel?: string;
   tone: "green" | "red";
   onConfirm: () => void;
   onCancel: () => void;
@@ -70,9 +70,11 @@ export function DemoModal({
           >
             {confirmLabel}
           </ActionButton>
-          <ActionButton variant="secondary" onClick={onCancel}>
-            {cancelLabel}
-          </ActionButton>
+          {cancelLabel ? (
+            <ActionButton variant="secondary" onClick={onCancel}>
+              {cancelLabel}
+            </ActionButton>
+          ) : null}
         </div>
       </div>
     </div>

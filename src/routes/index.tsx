@@ -151,7 +151,6 @@ function Index() {
         title="Demo Notice"
         tone="green"
         confirmLabel="Close"
-        cancelLabel="Close"
         onConfirm={closeModal}
         onCancel={closeModal}
         description="This is a demonstration. No real withdrawal has been initiated, no payment has been processed, and no funds or accounts are affected."
