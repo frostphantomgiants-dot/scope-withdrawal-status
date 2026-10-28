@@ -1,10 +1,16 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { createFileRoute } from "@tanstack/react-router";
+import { toast } from "sonner";
+
+import { supabase } from "@/integrations/supabase/client";
 import { ScopeWordmark } from "@/components/scope/ScopeWordmark";
 import { StatusBanner } from "@/components/scope/StatusBanner";
 import { DetailsPanel } from "@/components/scope/DetailsPanel";
 import { ActionButton } from "@/components/scope/ActionButton";
 import { DemoModal } from "@/components/scope/DemoModal";
+import { AuthModal } from "@/components/scope/AuthModal";
+import { SessionBar } from "@/components/scope/SessionBar";
 import {
   STATUS_LABEL,
   type DemoTransactionStatus,
@@ -33,9 +39,11 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type ModalState = "closed" | "withdraw" | "cancel" | "withdrawn-demo";
+type ModalState = "closed" | "withdraw" | "cancel" | "auth" | "withdrawn-demo";
+type PendingAction = "withdraw" | "cancel";
 
 function Index() {
+  const [user, setUser] = useState<User | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethodValue | "">(
     "",
   );
@@ -43,9 +51,75 @@ function Index() {
   const [showValidationError, setShowValidationError] = useState(false);
   const [modal, setModal] = useState<ModalState>("closed");
 
+  const pendingActionRef = useRef<PendingAction | null>(null);
+  const paymentMethodRef = useRef(paymentMethod);
+  paymentMethodRef.current = paymentMethod;
+
   const anyModalOpen = modal !== "closed";
 
+  // Track the Supabase session (identity changes only).
+  useEffect(() => {
+    let active = true;
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setUser(data.session?.user ?? null);
+    });
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") {
+        return;
+      }
+      setUser(session?.user ?? null);
+    });
+    return () => {
+      active = false;
+      data.subscription.unsubscribe();
+    };
+  }, []);
+
+  // Load the signed-in account's saved transaction, or create one on first
+  // sign-in, so the status survives refreshes and devices.
+  useEffect(() => {
+    if (!user) {
+      setStatus("pending");
+      return;
+    }
+    let active = true;
+    const loadTransaction = async () => {
+      const { data, error } = await supabase
+        .from("escrow_transactions")
+        .select("status, payment_method")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!active || error) {
+        if (error) {
+          toast.error("We couldn't load your saved transaction status.");
+        }
+        return;
+      }
+      if (data) {
+        setStatus(data.status as DemoTransactionStatus);
+        if (data.payment_method) {
+          setPaymentMethod(data.payment_method as PaymentMethodValue);
+        }
+        return;
+      }
+      await supabase.from("escrow_transactions").insert({
+        user_id: user.id,
+        status: "pending",
+        payment_method: paymentMethodRef.current || null,
+      });
+    };
+    void loadTransaction();
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
   const handleWithdrawClick = () => {
+    if (!user) {
+      pendingActionRef.current = "withdraw";
+      setModal("auth");
+      return;
+    }
     if (!paymentMethod) {
       setShowValidationError(true);
       return;
@@ -54,12 +128,74 @@ function Index() {
     setModal("withdraw");
   };
 
-  const confirmWithdraw = () => {
-    setModal("withdrawn-demo");
+  const handleCancelClick = () => {
+    if (!user) {
+      pendingActionRef.current = "cancel";
+      setModal("auth");
+      return;
+    }
+    setModal("cancel");
   };
 
-  const confirmCancel = () => {
+  const handleAuthenticated = () => {
+    const action = pendingActionRef.current;
+    pendingActionRef.current = null;
+    if (action === "withdraw") {
+      if (!paymentMethod) {
+        setShowValidationError(true);
+        setModal("closed");
+        return;
+      }
+      setShowValidationError(false);
+      setModal("withdraw");
+      return;
+    }
+    if (action === "cancel") {
+      setModal("cancel");
+      return;
+    }
+    setModal("closed");
+  };
+
+  const confirmWithdraw = async () => {
+    setStatus("withdrawn");
+    setModal("withdrawn-demo");
+    if (user) {
+      const { error } = await supabase
+        .from("escrow_transactions")
+        .update({
+          status: "withdrawn",
+          payment_method: paymentMethod || null,
+        })
+        .eq("user_id", user.id);
+      if (error) {
+        toast.error(
+          "We couldn't save the withdrawal status. Please check your connection and try again.",
+        );
+      }
+    }
+  };
+
+  const confirmCancel = async () => {
     setStatus("cancelled");
+    setModal("closed");
+    if (user) {
+      const { error } = await supabase
+        .from("escrow_transactions")
+        .update({ status: "cancelled" })
+        .eq("user_id", user.id);
+      if (error) {
+        toast.error(
+          "We couldn't save the cancellation. Please check your connection and try again.",
+        );
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    pendingActionRef.current = null;
+    await supabase.auth.signOut();
+    setStatus("pending");
     setModal("closed");
   };
 
@@ -112,7 +248,7 @@ function Index() {
           </ActionButton>
           <ActionButton
             variant="secondary"
-            onClick={() => setModal("cancel")}
+            onClick={handleCancelClick}
             disabled={anyModalOpen || status === "cancelled"}
           >
             Cancel Transaction Now
@@ -122,7 +258,19 @@ function Index() {
         <p className="mt-[17px] text-center text-xs leading-[19px] text-helper-gray">
           Processing may take a few minutes depending on network availability.
         </p>
+
+        <SessionBar
+          email={user?.email ?? undefined}
+          onSignOut={handleSignOut}
+        />
       </div>
+
+      <AuthModal
+        open={modal === "auth"}
+        reason={modal === "auth" ? pendingActionRef.current : null}
+        onClose={closeModal}
+        onAuthenticated={handleAuthenticated}
+      />
 
       <DemoModal
         open={modal === "withdraw"}
@@ -153,7 +301,11 @@ function Index() {
         confirmLabel="Close"
         onConfirm={closeModal}
         onCancel={closeModal}
-        description="This is a demonstration. No real withdrawal has been initiated, no payment has been processed, and no funds or accounts are affected."
+        description={
+          user
+            ? "This is a demonstration. The status has been saved to your Scope account — no real withdrawal has been initiated and no funds or accounts are affected."
+            : "This is a demonstration. No real withdrawal has been initiated, no payment has been processed, and no funds or accounts are affected."
+        }
       />
     </main>
   );

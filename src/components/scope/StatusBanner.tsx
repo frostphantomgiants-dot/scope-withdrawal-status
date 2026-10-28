@@ -3,6 +3,7 @@ import type { DemoTransactionStatus } from "./types";
 
 const BANNER_TEXT: Record<DemoTransactionStatus, string> = {
   pending: "Withdrawal Pending",
+  withdrawn: "Withdrawal Completed",
   cancelled: "Withdrawal Cancelled",
 };
 
