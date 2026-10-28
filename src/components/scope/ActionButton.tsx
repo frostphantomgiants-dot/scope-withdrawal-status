@@ -1,9 +1,9 @@
-import type { ButtonHTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 type ActionButtonVariant = "primary" | "secondary";
 
-interface ActionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface ActionButtonProps extends ComponentProps<"button"> {
   variant: ActionButtonVariant;
   children: ReactNode;
 }
