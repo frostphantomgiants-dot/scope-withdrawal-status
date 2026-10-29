@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
@@ -10,6 +10,7 @@ import { DetailsPanel } from "@/components/scope/DetailsPanel";
 import { ActionButton } from "@/components/scope/ActionButton";
 import { DemoModal } from "@/components/scope/DemoModal";
 import { AuthModal } from "@/components/scope/AuthModal";
+import { AccountModal } from "@/components/scope/AccountModal";
 import { SessionBar } from "@/components/scope/SessionBar";
 import {
   STATUS_LABEL,
@@ -36,10 +37,19 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    signin: typeof search["signin"] === "string" ? search["signin"] : undefined,
+  }),
   component: Index,
 });
 
-type ModalState = "closed" | "withdraw" | "cancel" | "auth" | "withdrawn-demo";
+type ModalState =
+  | "closed"
+  | "withdraw"
+  | "cancel"
+  | "auth"
+  | "withdrawn-demo"
+  | "account";
 type PendingAction = "withdraw" | "cancel";
 
 function Index() {
@@ -50,8 +60,11 @@ function Index() {
   const [status, setStatus] = useState<DemoTransactionStatus>("pending");
   const [showValidationError, setShowValidationError] = useState(false);
   const [modal, setModal] = useState<ModalState>("closed");
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  const navigate = useNavigate();
   const pendingActionRef = useRef<PendingAction | null>(null);
+  const adminIntentRef = useRef(false);
   const paymentMethodRef = useRef(paymentMethod);
   paymentMethodRef.current = paymentMethod;
 
@@ -114,6 +127,37 @@ function Index() {
     };
   }, [user]);
 
+  // Load the signed-in account's role so the admin dashboard link reflects it.
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    let active = true;
+    void supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (active) {
+          setIsAdmin(Boolean(data?.some((row) => row.role === "admin")));
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // The /admin route bounces unauthenticated visitors here with ?signin=admin:
+  // open the sign-in modal and remember that finishing sign-in means /admin.
+  const signinParam = Route.useSearch().signin;
+  useEffect(() => {
+    if (signinParam !== "admin") return;
+    adminIntentRef.current = true;
+    setModal("auth");
+    void navigate({ to: "/", search: { signin: undefined }, replace: true });
+  }, [signinParam, navigate]);
+
   const handleWithdrawClick = () => {
     if (!user) {
       pendingActionRef.current = "withdraw";
@@ -140,6 +184,24 @@ function Index() {
   const handleAuthenticated = () => {
     const action = pendingActionRef.current;
     pendingActionRef.current = null;
+    if (adminIntentRef.current) {
+      adminIntentRef.current = false;
+      void (async () => {
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return;
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id);
+        setModal("closed");
+        if (roles?.some((row) => row.role === "admin")) {
+          await navigate({ to: "/admin" });
+          return;
+        }
+        toast.error("This account doesn't have admin access.");
+      })();
+      return;
+    }
     if (action === "withdraw") {
       if (!paymentMethod) {
         setShowValidationError(true);
@@ -261,6 +323,8 @@ function Index() {
 
         <SessionBar
           email={user?.email ?? undefined}
+          isAdmin={isAdmin}
+          onOpenAccount={() => setModal("account")}
           onSignOut={handleSignOut}
         />
       </div>
@@ -270,6 +334,12 @@ function Index() {
         reason={modal === "auth" ? pendingActionRef.current : null}
         onClose={closeModal}
         onAuthenticated={handleAuthenticated}
+      />
+
+      <AccountModal
+        open={modal === "account"}
+        email={user?.email ?? undefined}
+        onClose={closeModal}
       />
 
       <DemoModal
