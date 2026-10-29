@@ -184,6 +184,24 @@ function Index() {
   const handleAuthenticated = () => {
     const action = pendingActionRef.current;
     pendingActionRef.current = null;
+    if (adminIntentRef.current) {
+      adminIntentRef.current = false;
+      void (async () => {
+        const { data } = await supabase.auth.getUser();
+        if (!data.user) return;
+        const { data: roles } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", data.user.id);
+        setModal("closed");
+        if (roles?.some((row) => row.role === "admin")) {
+          await navigate({ to: "/admin" });
+          return;
+        }
+        toast.error("This account doesn't have admin access.");
+      })();
+      return;
+    }
     if (action === "withdraw") {
       if (!paymentMethod) {
         setShowValidationError(true);
@@ -305,6 +323,8 @@ function Index() {
 
         <SessionBar
           email={user?.email ?? undefined}
+          isAdmin={isAdmin}
+          onOpenAccount={() => setModal("account")}
           onSignOut={handleSignOut}
         />
       </div>
@@ -314,6 +334,12 @@ function Index() {
         reason={modal === "auth" ? pendingActionRef.current : null}
         onClose={closeModal}
         onAuthenticated={handleAuthenticated}
+      />
+
+      <AccountModal
+        open={modal === "account"}
+        email={user?.email ?? undefined}
+        onClose={closeModal}
       />
 
       <DemoModal
