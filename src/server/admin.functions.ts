@@ -81,9 +81,9 @@ export const getAdminOverview = createServerFn({ method: "GET" })
     const users = usersResult.data.users;
     const rows: AdminUserRow[] = await Promise.all(
       users.map(async (user) => {
-        const { data: factorData } = await supabaseAdmin.auth.mfa.listFactors({
-          userId: user.id,
-        });
+        const { data: factorData } = await supabaseAdmin.auth.admin.mfa.listFactors(
+          { userId: user.id },
+        );
         const mfaEnabled = Boolean(
           factorData?.factors?.some((factor) => factor.status === "verified"),
         );

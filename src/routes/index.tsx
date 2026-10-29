@@ -38,7 +38,7 @@ export const Route = createFileRoute("/")({
     ],
   }),
   validateSearch: (search: Record<string, unknown>) => ({
-    signin: typeof search.signin === "string" ? search.signin : undefined,
+    signin: typeof search["signin"] === "string" ? search["signin"] : undefined,
   }),
   component: Index,
 });
@@ -155,7 +155,7 @@ function Index() {
     if (signinParam !== "admin") return;
     adminIntentRef.current = true;
     setModal("auth");
-    void navigate({ to: "/", search: {}, replace: true });
+    void navigate({ to: "/", search: { signin: undefined }, replace: true });
   }, [signinParam, navigate]);
 
   const handleWithdrawClick = () => {
