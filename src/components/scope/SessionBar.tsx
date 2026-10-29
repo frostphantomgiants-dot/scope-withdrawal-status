@@ -7,10 +7,6 @@ interface SessionBarProps {
   onSignOut: () => void;
 }
 
-function barLink(
-  "rounded text-xs font-bold text-scope-red underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-scope-red/40",
-);
-
 export function SessionBar({
   email,
   isAdmin = false,
