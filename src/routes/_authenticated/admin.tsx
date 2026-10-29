@@ -8,7 +8,7 @@ import {
   STATUS_LABEL,
   type DemoTransactionStatus,
 } from "@/components/scope/types";
-import { getAdminOverview } from "@/server/admin.functions";
+import { getAdminOverview } from "@/lib/admin.functions";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin")({
