@@ -87,7 +87,11 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
         friendlyName: "Scope",
       });
       if (enrollError || !data?.totp) {
-        setError("Could not start enrollment. Please try again.");
+        setError(
+          enrollError
+            ? `Could not start enrollment: ${enrollError.message}`
+            : "Could not start enrollment. Please try again.",
+        );
         return;
       }
       const { data: challenge, error: challengeError } =
