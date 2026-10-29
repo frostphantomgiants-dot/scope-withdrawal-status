@@ -225,6 +225,7 @@ function AdminPage() {
 
           <Link
             to="/"
+            search={{ signin: undefined }}
             className="mt-8 inline-block rounded text-sm font-bold text-scope-red underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-scope-red/40"
           >
             ← Back to Scope
