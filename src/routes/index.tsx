@@ -10,6 +10,7 @@ import { DetailsPanel } from "@/components/scope/DetailsPanel";
 import { ActionButton } from "@/components/scope/ActionButton";
 import { DemoModal } from "@/components/scope/DemoModal";
 import { AuthModal } from "@/components/scope/AuthModal";
+import { AccountModal } from "@/components/scope/AccountModal";
 import { SessionBar } from "@/components/scope/SessionBar";
 import {
   STATUS_LABEL,
@@ -36,10 +37,19 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary" },
     ],
   }),
+  validateSearch: (search: Record<string, unknown>) => ({
+    signin: typeof search.signin === "string" ? search.signin : undefined,
+  }),
   component: Index,
 });
 
-type ModalState = "closed" | "withdraw" | "cancel" | "auth" | "withdrawn-demo";
+type ModalState =
+  | "closed"
+  | "withdraw"
+  | "cancel"
+  | "auth"
+  | "withdrawn-demo"
+  | "account";
 type PendingAction = "withdraw" | "cancel";
 
 function Index() {
@@ -50,8 +60,11 @@ function Index() {
   const [status, setStatus] = useState<DemoTransactionStatus>("pending");
   const [showValidationError, setShowValidationError] = useState(false);
   const [modal, setModal] = useState<ModalState>("closed");
+  const [isAdmin, setIsAdmin] = useState(false);
 
+  const navigate = useNavigate();
   const pendingActionRef = useRef<PendingAction | null>(null);
+  const adminIntentRef = useRef(false);
   const paymentMethodRef = useRef(paymentMethod);
   paymentMethodRef.current = paymentMethod;
 
@@ -113,6 +126,37 @@ function Index() {
       active = false;
     };
   }, [user]);
+
+  // Load the signed-in account's role so the admin dashboard link reflects it.
+  useEffect(() => {
+    if (!user) {
+      setIsAdmin(false);
+      return;
+    }
+    let active = true;
+    void supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .then(({ data }) => {
+        if (active) {
+          setIsAdmin(Boolean(data?.some((row) => row.role === "admin")));
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [user]);
+
+  // The /admin route bounces unauthenticated visitors here with ?signin=admin:
+  // open the sign-in modal and remember that finishing sign-in means /admin.
+  const signinParam = Route.useSearch().signin;
+  useEffect(() => {
+    if (signinParam !== "admin") return;
+    adminIntentRef.current = true;
+    setModal("auth");
+    void navigate({ to: "/", search: {}, replace: true });
+  }, [signinParam, navigate]);
 
   const handleWithdrawClick = () => {
     if (!user) {
