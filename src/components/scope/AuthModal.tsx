@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { supabase } from "@/integrations/supabase/client";
 import { ActionButton } from "./ActionButton";
+import { VisibilityToggle } from "./VisibilityToggle";
 import { cn } from "@/lib/utils";
 
 type AuthMode = "signin" | "signup";
@@ -78,6 +79,8 @@ export function AuthModal({
   }>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showMfaCode, setShowMfaCode] = useState(true);
   const firstFieldRef = useRef<HTMLInputElement>(null);
   const mfaFieldRef = useRef<HTMLInputElement>(null);
 
@@ -147,6 +150,8 @@ export function AuthModal({
     setFieldErrors({});
     setMfaCode("");
     setMfaContext(null);
+    setShowPassword(false);
+    setShowMfaCode(true);
     firstFieldRef.current?.focus();
 
     // If the visitor already holds a session that only needs the MFA step
