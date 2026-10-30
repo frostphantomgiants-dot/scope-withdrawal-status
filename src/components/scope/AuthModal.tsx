@@ -382,7 +382,7 @@ export function AuthModal({
                   </p>
                 ) : null}
               </div>
-              <div>
+              <div className="relative">
                 <label
                   htmlFor="auth-password"
                   className="mb-1 block text-sm text-label-muted"
@@ -391,14 +391,22 @@ export function AuthModal({
                 </label>
                 <input
                   id="auth-password"
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   autoComplete={
                     mode === "signup" ? "new-password" : "current-password"
                   }
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   aria-invalid={fieldErrors.password ? true : undefined}
-                  className={inputClass(Boolean(fieldErrors.password))}
+                  className={cn(
+                    inputClass(Boolean(fieldErrors.password)),
+                    "pr-11",
+                  )}
+                />
+                <VisibilityToggle
+                  shown={showPassword}
+                  onToggle={() => setShowPassword((value) => !value)}
+                  label="password"
                 />
                 {fieldErrors.password ? (
                   <p className="mt-1 text-xs text-cancel-red" role="alert">
@@ -440,7 +448,7 @@ export function AuthModal({
             <p className="text-center text-sm leading-[19px] text-helper-gray">
               Enter the 6-digit code from your authenticator app.
             </p>
-            <div>
+            <div className="relative">
               <label htmlFor="auth-mfa" className="sr-only">
                 Authentication code
               </label>
@@ -450,12 +458,21 @@ export function AuthModal({
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
+                type={showMfaCode ? "text" : "password"}
                 value={mfaCode}
                 onChange={(event) =>
                   setMfaCode(event.target.value.replace(/[^\d\s]/g, ""))
                 }
                 aria-invalid={Boolean(formError) || undefined}
-                className={cn(inputClass(Boolean(formError)), "text-center text-lg tracking-[6px]")}
+                className={cn(
+                  inputClass(Boolean(formError)),
+                  "pr-11 text-center text-lg tracking-[6px]",
+                )}
+              />
+              <VisibilityToggle
+                shown={showMfaCode}
+                onToggle={() => setShowMfaCode((value) => !value)}
+                label="authentication code"
               />
             </div>
 
