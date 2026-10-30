@@ -25,6 +25,7 @@ interface PendingEnrollment {
 
 export function AccountModal({ open, email, onClose }: AccountModalProps) {
   const [factors, setFactors] = useState<TotpFactorView[]>([]);
+  const [hasPendingFactor, setHasPendingFactor] = useState(false);
   const [loadingFactors, setLoadingFactors] = useState(false);
   const [enrollment, setEnrollment] = useState<PendingEnrollment | null>(null);
   const [code, setCode] = useState("");
@@ -36,17 +37,19 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
     try {
       const { data, error: factorsError } = await supabase.auth.mfa.listFactors();
       if (factorsError) {
-        setError("We couldn't load your security settings. Please try again.");
+        setError(factorsError.message);
         return;
       }
+      const totp = data?.totp ?? [];
       setFactors(
-        (data?.totp ?? [])
+        totp
           .filter((factor) => factor.status === "verified")
           .map((factor) => ({
             id: factor.id,
             friendlyName: factor.friendly_name ?? null,
           })),
       );
+      setHasPendingFactor(totp.some((factor) => factor.status !== "verified"));
     } finally {
       setLoadingFactors(false);
     }
@@ -71,13 +74,20 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
     setBusy(true);
     try {
       // Remove any abandoned unverified factor so a fresh one can enroll.
-      const { data: existing } = await supabase.auth.mfa.listFactors();
+      const { data: existing, error: listError } =
+        await supabase.auth.mfa.listFactors();
+      if (listError) {
+        setError(listError.message);
+        return;
+      }
       for (const factor of existing?.totp ?? []) {
         if (factor.status !== "verified") {
-          try {
-            await supabase.auth.mfa.unenroll({ factorId: factor.id });
-          } catch {
-            // Best effort cleanup only.
+          const { error: cleanupError } = await supabase.auth.mfa.unenroll({
+            factorId: factor.id,
+          });
+          if (cleanupError) {
+            setError(cleanupError.message);
+            return;
           }
         }
       }
@@ -87,13 +97,21 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
         friendlyName: "Scope",
       });
       if (enrollError || !data?.totp) {
-        setError("Could not start enrollment. Please try again.");
+        setError(
+          enrollError
+            ? enrollError.message
+            : "Could not start enrollment. Please try again.",
+        );
         return;
       }
       const { data: challenge, error: challengeError } =
         await supabase.auth.mfa.challenge({ factorId: data.id });
       if (challengeError || !challenge) {
-        setError("Could not start the verification. Please try again.");
+        setError(
+          challengeError
+            ? challengeError.message
+            : "Could not start the verification. Please try again.",
+        );
         return;
       }
       setEnrollment({
@@ -103,6 +121,7 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
         secret: data.totp.secret,
       });
       setCode("");
+      setHasPendingFactor(false);
     } finally {
       setBusy(false);
     }
@@ -310,13 +329,29 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
             </div>
 
             {factors.length === 0 && !loadingFactors ? (
-              <ActionButton
-                variant="primary"
-                onClick={() => void startEnrollment()}
-                disabled={busy}
-              >
-                {busy ? "Please wait…" : "Enable Two-Factor Authentication"}
-              </ActionButton>
+              hasPendingFactor ? (
+                <>
+                  <p className="text-xs leading-[17px] text-helper-gray">
+                    An earlier enrollment wasn't completed. Clean it up and
+                    start over with a fresh QR code.
+                  </p>
+                  <ActionButton
+                    variant="primary"
+                    onClick={() => void startEnrollment()}
+                    disabled={busy}
+                  >
+                    {busy ? "Please wait…" : "Retry Enrollment"}
+                  </ActionButton>
+                </>
+              ) : (
+                <ActionButton
+                  variant="primary"
+                  onClick={() => void startEnrollment()}
+                  disabled={busy}
+                >
+                  {busy ? "Please wait…" : "Enable Two-Factor Authentication"}
+                </ActionButton>
+              )
             ) : null}
 
             {error ? (
