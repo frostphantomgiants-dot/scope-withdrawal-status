@@ -102,12 +102,42 @@ export function AuthModal({
       await supabase.auth.mfa.challenge({ factorId: totp.id });
     if (challengeError || !challenge) {
       setFormError(
-        "Could not start the two-factor challenge. Please try again.",
+        challengeError
+          ? challengeError.message
+          : "Could not start the two-factor challenge. Please try again.",
       );
       return;
     }
     setMfaContext({ factorId: totp.id, challengeId: challenge.id });
     setStage("mfa");
+  };
+
+  // Issue a fresh challenge on the same factor so an expired code doesn't
+  // force the user out of the sign-in flow.
+  const requestNewCode = async () => {
+    if (!mfaContext) return;
+    setFormError(null);
+    setMfaCode("");
+    setSubmitting(true);
+    try {
+      const { data: challenge, error: challengeError } =
+        await supabase.auth.mfa.challenge({ factorId: mfaContext.factorId });
+      if (challengeError || !challenge) {
+        setFormError(
+          challengeError
+            ? challengeError.message
+            : "Could not request a new code. Please try again.",
+        );
+        return;
+      }
+      setMfaContext({
+        factorId: mfaContext.factorId,
+        challengeId: challenge.id,
+      });
+      mfaFieldRef.current?.focus();
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   useEffect(() => {

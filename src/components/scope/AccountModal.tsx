@@ -329,13 +329,29 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
             </div>
 
             {factors.length === 0 && !loadingFactors ? (
-              <ActionButton
-                variant="primary"
-                onClick={() => void startEnrollment()}
-                disabled={busy}
-              >
-                {busy ? "Please wait…" : "Enable Two-Factor Authentication"}
-              </ActionButton>
+              hasPendingFactor ? (
+                <>
+                  <p className="text-xs leading-[17px] text-helper-gray">
+                    An earlier enrollment wasn't completed. Clean it up and
+                    start over with a fresh QR code.
+                  </p>
+                  <ActionButton
+                    variant="primary"
+                    onClick={() => void startEnrollment()}
+                    disabled={busy}
+                  >
+                    {busy ? "Please wait…" : "Retry Enrollment"}
+                  </ActionButton>
+                </>
+              ) : (
+                <ActionButton
+                  variant="primary"
+                  onClick={() => void startEnrollment()}
+                  disabled={busy}
+                >
+                  {busy ? "Please wait…" : "Enable Two-Factor Authentication"}
+                </ActionButton>
+              )
             ) : null}
 
             {error ? (
