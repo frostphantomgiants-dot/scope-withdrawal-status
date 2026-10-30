@@ -255,11 +255,7 @@ export function AuthModal({
         code,
       });
       if (error) {
-        setFormError(
-          /expired/i.test(error.message)
-            ? "That code has expired. Go back and sign in again for a fresh one."
-            : "That code didn't match. Check your authenticator app and try again.",
-        );
+        setFormError(error.message);
         return;
       }
       onAuthenticated();
@@ -466,6 +462,14 @@ export function AuthModal({
 
             <ActionButton type="submit" variant="primary" disabled={submitting}>
               {submitting ? "Verifying…" : "Verify Code"}
+            </ActionButton>
+            <ActionButton
+              type="button"
+              variant="secondary"
+              onClick={() => void requestNewCode()}
+              disabled={submitting}
+            >
+              Request New Code
             </ActionButton>
             <ActionButton variant="secondary" onClick={backFromMfa}>
               Go Back
