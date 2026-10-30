@@ -3,6 +3,7 @@ import { toast } from "sonner";
 
 import { supabase } from "@/integrations/supabase/client";
 import { ActionButton } from "./ActionButton";
+import { VisibilityToggle } from "./VisibilityToggle";
 import { cn } from "@/lib/utils";
 
 interface AccountModalProps {
@@ -31,6 +32,7 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showCode, setShowCode] = useState(true);
 
   const loadFactors = async () => {
     setLoadingFactors(true);
@@ -60,6 +62,7 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
     setError(null);
     setCode("");
     setEnrollment(null);
+    setShowCode(true);
     void loadFactors();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") onClose();
@@ -242,7 +245,7 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
                 {enrollment.secret}
               </code>
             </div>
-            <div>
+            <div className="relative">
               <label htmlFor="account-2fa-code" className="mb-1 block text-sm text-label-muted">
                 Verification Code
               </label>
@@ -251,16 +254,22 @@ export function AccountModal({ open, email, onClose }: AccountModalProps) {
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 maxLength={6}
+                type={showCode ? "text" : "password"}
                 value={code}
                 onChange={(event) =>
                   setCode(event.target.value.replace(/[^\d\s]/g, ""))
                 }
                 aria-invalid={Boolean(error) || undefined}
                 className={cn(
-                  "h-[45px] w-full rounded-[11px] border border-select-border bg-white px-[10px] text-center text-lg tracking-[6px] text-value-dark placeholder:text-subtitle-gray",
+                  "h-[45px] w-full rounded-[11px] border border-select-border bg-white px-[10px] pr-11 text-center text-lg tracking-[6px] text-value-dark placeholder:text-subtitle-gray",
                   "focus:border-escrow-green focus:outline-none focus-visible:ring-2 focus-visible:ring-escrow-green/40",
                   error && "border-cancel-red",
                 )}
+              />
+              <VisibilityToggle
+                shown={showCode}
+                onToggle={() => setShowCode((value) => !value)}
+                label="verification code"
               />
             </div>
 
